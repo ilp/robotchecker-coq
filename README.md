@@ -1,1 +1,1 @@
-# robotchecker-coq
+# RobotChecker in Coq
