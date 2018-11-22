@@ -152,10 +152,10 @@ Fixpoint get_start_pos_y (m : map_new) : nat :=
 
 Definition start_x := get_start_pos_x map_example.
 Definition start_y := get_start_pos_y map_example.
-Definition north := 0.
-Definition east := 1.
-Definition south := 2.
-Definition west := 3.
+Definition north : nat := 0.
+Definition east :nat := 1.
+Definition south :nat := 2.
+Definition west :nat := 3.
 
 Fixpoint eqb n m : bool :=
   match n, m with
@@ -178,6 +178,12 @@ Fixpoint things_at (m: map_new) (x: nat) (y: nat) : Things :=
                   end
   end.
 
+Example things_at_1  :
+  things_at map_example 2 3 = Start.
+Proof. reflexivity. Qed.
+Example things_at_2  :
+  things_at map_example 2 5 = Obs.
+Proof. reflexivity. Qed.
 
 (* looks for obstacles*)
 Definition things_in_front (m : map_new) (x : nat) (y: nat) (o : nat) : Things :=
@@ -186,7 +192,6 @@ Definition things_in_front (m : map_new) (x : nat) (y: nat) (o : nat) : Things :
     | 1  => things_at m (plus x 1) y
     | 2 => things_at m x (plus y 1)
     | _  => things_at m (minus x 1) y
-    
   end.
 
 (*return true if there is a obstacle in front of robot and false otherwise*) 
@@ -215,40 +220,81 @@ Definition get_element_mem (pos: nat) (mem: memory) : nat :=
   end.
 
 
-(* TODO forward command specification*)
-(*Fixpoint move_steps (mem: memory) (m: map_new) (n : nat) : memory :=
-  match n with
-    | 0 => mem
-    | _ => match mem with
-            | (x;y;0) => if front_is_obstacle m x y 0 then
-                            move_steps mem m 0
-                         else
-                            move_steps (x;(minus y 1);0) m (minus n 1)
-            | (x;y;1) => if front_is_obstacle m x y 1 then
-                            move_steps mem m 0
-                         else
-                            move_steps ((plus x 1);y;1) m (minus n 1)
-            | (x;y;2) => if front_is_obstacle m x y 2 then
-                            move_steps mem m 0
-                         else
-                            move_steps (x;(plus y 1);2) m (minus n 1)
-            | (x;y;_) => if front_is_obstacle m x y 3 then
-                            move_steps mem m 0
-                         else
-                            move_steps ((minus x 1);y;3) m (minus n 1)
-           end
-  end. 
-
-Definition forward (mem: memory) (m: map_new) (n: nat) : memory :=
-  move_steps mem m n.
-*)
+(* move_steps move the robot n cells, but if the  specification*)
+Fixpoint move_steps (mem: memory) (m: map_new) (n : nat) (i: nat) : memory :=
+   match i with
+    | O => mem
+    | S i' =>  
+      match n with
+        | 0 => mem
+        | _ => match mem with
+                | (x;y;0) => if front_is_obstacle m x y north then
+                                move_steps mem m 0 i'
+                             else
+                                move_steps (x;(minus y 1);0) m (minus n 1) i'
+                | (x;y;1) => if front_is_obstacle m x y 1 then
+                                move_steps mem m 0 i'
+                             else
+                                move_steps ((plus x 1);y;1) m (minus n 1) i'
+                | (x;y;2) => if front_is_obstacle m x y 2 then
+                                move_steps mem m 0 i'
+                             else
+                                move_steps (x;(plus y 1);2) m (minus n 1) i'
+                | (x;y;_) => if front_is_obstacle m x y 3 then
+                                move_steps mem m 0 i'
+                             else
+                                move_steps ((minus x 1);y;3) m (minus n 1) i'
+               end
+      end
+  end.
 
 (* forward command specification*)
+Definition forward_command (mem: memory) (m: map_new) (n: nat) : memory :=
+  move_steps mem m n n.
 
-(* TODO when to dicovery how to solve the problem of higher-functions
-Fixpoint move_steps_back (mem: memory) (m: map_new) (n : nat) : memory := 
-Definition backward (mem: memory) (m: map_new) (n: nat) : memory :=
-*)
+(*Example: forward(2)
+ When the robot is at position (2, 3) and its orientation is north (0) then move 2 cells*)
+Example forward_1 : 
+  forward_command (2;3;0) map_example 2 = (2;2;0).
+Proof. reflexivity. Qed.
+
+(* move_steps_back move the robot n cells backward*)
+Fixpoint move_steps_back (mem: memory) (m: map_new) (n : nat) (i: nat) : memory :=
+   match i with
+    | O => mem
+    | S i' =>  
+      match n with
+        | 0 => mem
+        | _ => match mem with
+                | (x;y;0) => if front_is_obstacle m x y 2 then
+                                move_steps_back mem m 0 i'
+                             else
+                                move_steps_back (x;(plus y 1);0) m (minus n 1) i'
+                | (x;y;1) => if front_is_obstacle m x y 3 then
+                                move_steps_back mem m 0 i'
+                             else
+                                move_steps_back ((minus x 1);y;1) m (minus n 1) i'
+                | (x;y;2) => if front_is_obstacle m x y 0 then
+                                move_steps_back mem m 0 i'
+                             else
+                                move_steps_back (x;(minus y 1);2) m (minus n 1) i'
+                | (x;y;_) => if front_is_obstacle m x y 1 then
+                                move_steps_back mem m 0 i'
+                             else
+                                move_steps_back ((plus x 1);y;3) m (minus n 1) i'
+               end
+      end
+  end.
+
+(* backward command specification*)
+Definition backward_command (mem: memory) (m: map_new) (n: nat) : memory :=
+  move_steps_back mem m n n.
+
+(*Example: backward(2)
+ When the robot is at position (2, 3) and its orientation is north (0) then move 2 cells*)
+Example backward_1 : 
+  backward_command (2;3;0) map_example 2 = (2;4;0).
+Proof. reflexivity. Qed.
 
 
 (* change robot's orientation to right*)
@@ -300,6 +346,9 @@ End RoboModel.
 
 Module Program.
 
+Import Map.
+Import RoboModel.
+
 Inductive Command: Type :=
   | forward : nat -> Command
   | backward : nat -> Command 
@@ -310,26 +359,113 @@ Inductive Program : Type :=
   | EOF : Program  
   | c : Command -> Program -> Program.
 
-Notation "c1 ; c2" :=
+Notation "c1 ;; c2" :=
   (c c1 c2) (at level 80, right associativity).
 
+(*type to indicate the robot's attributes when the program finished (pos x & pos y & orientation) *)
+Inductive result : Type :=
+  | res : nat -> nat -> nat -> result.
+
+Notation "( x & y & o )" := (res x y o).
+
 Definition example_program1 := 
-  forward 1;
-  backward 2; 
-  forward 1;
-  right;
-  left; 
+  forward 1;;
+  backward 2;;
+  forward 1;;
+  right;;
+  left;;
   EOF.
 
-Fixpoint read_program (p: Program) (mem: memory) (m: map_new): nat :=
+Fixpoint length_commands (p: Program) : nat :=
   match p with
-    | EOF => 0
+    | EOF => O
+    | fst ;; tail => S (length_commands tail)
+  end.
+
+Fixpoint read_program (p: Program) (m: map_new) (mem: memory): memory := 
+  match p with
+    | EOF => mem
     | c c1 tail => match c1 with
-                    | forward n  => forward_command mem m n
-                    | backward n => backward_command mem m n
-                    | right      => right_command mem m
-                    | left       => left_command mem m
-    
+                    | forward n  => read_program tail m (forward_command mem m n)
+                    | backward n => read_program tail m (backward_command mem m n)
+                    | right      => read_program tail m (right_command mem)
+                    | left       => read_program tail m (left_command mem)
+                  end
+  end.
+
+(* call read program and return the result when the program finished *)
+Definition start_program (p: Program) (m: map_new) (mem: memory) : result :=
+  match read_program p m mem with
+    | (x;y;o) => (x & y & o)
+  end.
+
+(*sample of program ROBO*)
+Definition example :=    
+  right;;
+  forward 3;;
+  backward 1;;
+  EOF.
+
+Example teste_map_example_program_example : 
+  start_program example map_example ( (get_start_pos_x map_example); (get_start_pos_y map_example); north ) = (4 & 3 & 1).
+Proof. reflexivity. Qed.
+
+
+
+(* examples *)
+Definition map1 := 
+{
+ (0, 0, Obs), (0, 1, Obs), (0, 2, Obs), (0, 3, Obs), (0, 4, Obs),
+ (0, 5, Obs), (0, 6, Obs), (1, 0, Obs), (1, 1, Obs), (1, 2, Obs),
+ (1, 3, Obs), (1, 4, Obs), (1, 5, Obs), (1, 6, Obs), (2, 0, Obs),
+ (2, 1, Obs), (2, 3, Start), (2, 5, Obs), (2, 6, Obs), (3, 0, Obs),
+ (3, 1, Obs), (3, 5, Obs), (3, 6, Obs), (4, 0, Obs), (4, 1, Obs),
+ (4, 2, Obs), (4, 4, Obs), (4, 5, Obs), (4, 6, Obs), (5, 0, Obs),
+ (5, 1, Obs), (5, 4, Obs), (5, 5, Obs), (5, 6, Obs), (6, 0, Obs),
+ (6, 1, Obs), (6, 2, Obs), (6, 4, Obs), (6, 5, Obs), (6, 6, Obs),
+ (7, 0, Obs), (7, 1, Obs), (7, 5, Obs), (7, 6, Obs), (8, 0, Obs),
+ (8, 1, Obs), (8, 2, Obs), (8, 3, Obs), (8, 4, Obs), (8, 5, Obs),
+ (8, 6, Obs), (9, 0, Obs), (9, 1, Obs), (9, 2, Obs), (9, 3, Obs),
+ (9, 4, Obs), (9, 5, Obs), (9, 6, Obs)
+}.
+
+Definition program1 := 
+  right;;
+  forward 3;;
+  left;;
+  forward 1;;
+  EOF.
+
+Definition init_memory := ( (get_start_pos_x map_example); (get_start_pos_y map_example); 0 ).
+Definition goal1 := (5 & 2 & 0).
+
+Example program1_map1:
+ start_program program1 map1 init_memory = goal1.
+Proof. reflexivity. Qed.
+
+
+
+Definition program2 := 
+  right;;
+  forward 5;;
+  EOF.
+
+Definition init_memory := ( (get_start_pos_x map_example); (get_start_pos_y map_example); 0 ).
+Definition goal1 := (2 & 2 & 1).
+Definition goal2 := (7 & 3 & 1).
+
+Compute start_program program1 map1 init_memory.
+Compute start_program program2 map1 init_memory.
+
+Example program1_map1:
+ start_program program1 map1 init_memory = goal1.
+Proof. reflexivity. Qed.
+
+Example program2_map1:
+ start_program program2 map1 init_memory = goal2.
+Proof. reflexivity. Qed.
+
+
 
 End Program.
 
